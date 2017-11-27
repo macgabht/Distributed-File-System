@@ -1,35 +1,42 @@
-import socket
+import socket, sys
 
 port = 22222 
 s = socket.socket()
 HOST = socket.gethostname()
 s.bind ((HOST, port))
 s.listen(5)
-RECV_BUFFER = 4096
+RECV_BUFFER = 1024
 
 print 'Server listening.....'
 
 while True:
-
+        
         conn, address = s.accept()
-        print 'Connection from', address
-        data = conn.recv(RECV_BUFFER)
-        print ('Server received,' repr(data))
-
-        filename = 'mytext.txt'
+        print ('Connection from: ', address)
+        conn.send('Would you like to read or write to a file? ')      
+        data = conn.recv(RECV_BUFFER) #await response
+        print 'Server received from user: ' + str(data)
+        #data will be either 'read' or 'write'
+        filename = 'test.txt'
         f = open(filename, 'rb')
-        l = f.read(RECV_BUFFER)
-        while (1):
-            conn.send(l)
-            print ('Sent ', repr(l))
-            l = f.read(1024)
-
+        l = 1
+        while (l):
+        
+                l = f.read(RECV_BUFFER)
+                while (l):
+                    conn.send(l)
+                    print ('Sent ' + str(l))
+                    l = f.read(RECV_BUFFER)
+                        
         f.close()
-
-        print ('Done sending')
-        conn.send('Thanks for connecting')
+        print ('Done sending files to read\n')
+        conn.send('Thanks for connecting, bye')
         conn.close()
 
+        
+                        
+                        
+                      
         
 
 
