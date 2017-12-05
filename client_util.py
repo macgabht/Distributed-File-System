@@ -1,28 +1,73 @@
-import socket, sys, pdb # Import socket module
+import socket, sys, pdb, Lock_ut # Import socket module
+from Lock_ut import FileLock
+
 
 RECV_BUFFER = 1024
 
 def create_socket_ser(address):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        #s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         s.connect(address) #set up connection, communicate with Directory
         return s
 
 def create_socket_dir(address):
         d = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        d.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         d.connect(address) #set up connection, communicate with Directory
         return d
         
 
-def dir_finder(s):
-    option = s.recv(RECV_BUFFER) #received option from server 
+def dir_finder(file_name, opt, s):
+    option = s.recv(RECV_BUFFER) #"what file would you like to search for?"
+    option = option.decode()
     print (option) #write this to screen
-    file_name = sys.stdin.readline() #write the file name in 
-    s.send(file_name)
+    print (file_name) #print out file_name, automatically send
+    data = (str(file_name) + ' ' + str(opt))
+    s.send(data.encode())
     answer = s.recv(RECV_BUFFER) #this is where we receive from directory service, this won't change
-    return answer
+    answer = answer.decode()
+    return answer #should return fn, server name, server port
 
+def process_write(file_name, opt, host, port):
+        
+        s = create_socket_dir((host, port)) #create connection to directory, we have file_name
+        response = dir_finder(file_name, opt, s) #get answer from directory
+        #**********
+        msg = response.split()
+        file_name = msg[1]
+        server_name = msg[3]
+        file_server_port = msg[5] #have info on file, need to pass name to locking
+        print (msg)
+
+        ####skip locking for moment, connect to file server
+        PORT = int(file_server_port)
+        d = create_socket_ser((host, PORT)) #connection from....
+        print ('Create your text edit...signal the end with <DONE>.\n')
+        text_edit = ''
+        while True:
+                
+                text_edit = sys.stdin.readline()
+                if '<DONE>' in text_edit:
+                    break
+                else:
+                     send_edit += text_edit
+        print ('n')
+
+        message = ('FILE_NAME: ' + str(file_name) + '\nOPTION: ' + str(opt) + '\nEDIT: ' + str(send_edit)) 
+        s.send(message.encode())
+        
+
+        
+
+        
+                        
+        
+        
+        
+        
+        
+        
+        
+        
+        
 def handle_option(msg, file_name, s, port, host):
     file_n = str(file_name)
     if 'read' in msg:
