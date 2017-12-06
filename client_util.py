@@ -87,7 +87,8 @@ def process_write(file_name, opt, host, port, JOIN_ID):
         print (lock_ans)
         l.close()
         ##############################################################
-        #               file server                                  #
+        #               file server
+        
         PORT = int(file_server_port)
         print ('Now connecting to file server..')
         d = create_socket_ser((host, PORT))
@@ -110,13 +111,46 @@ def process_read(file_name, opt, host, port, JOIN_ID):
         print ('Now connecting to file server...')
         PORT = int(file_server_port)
         r = create_socket_ser((host, PORT)) #connection from....
-        read_file = read_to_fs(file_name, opt, r)
-        r.close()
-        if read_file != "File could_not_be_found_here\n":
-               print (read_file)
+        ##########in here we need to check if its in cache#####
+        #if in_cache_test(file_name):
+                #with open(file_name, 'rb') as cache_f:
+                        #print ('File found in cache, but may not be up to date')
+                        #print (cache_f.read())
+        else:       
+                read_file = read_to_fs(file_name, opt, r)
+                make_cache_copy(file_name, read_file)
+                r.close()
+                if read_file != "File could_not_be_found_here\n":
+                       print (read_file)
                
-        
-        
+
+def in_cache_test(file_name):
+        try:
+                open(file_name, 'rb')
+        except FileNotFoundError:
+                return False
+
+        return True
+
+def make_cache_copy(file_name, edit):
+        with open(file_name, 'wb') as cache_f:
+                cache_f.write(edit)
+
+def update_cache(file_name, edit, opt, JOIN_ID):
+
+        current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
+        cache_f = current_path + "\\user_cache" + JOIN_ID + "\\" file_name
+
+        os.makedirs(os.path.dirname(cache_f), exist_ok = True)
+
+        if opt == "w";
+                with open(cache_f, opt) as fc:
+                    fc.write(send_edit)
+        else:
+                with open(cache_f, "r") as fc:        
+                    print ('*')
+                    print(fc.read())
+                    print ('*')
 
         
         
