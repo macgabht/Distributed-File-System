@@ -1,5 +1,4 @@
 #Directory Server
-
 import socket, sys, pdb, os
 import csv
 
@@ -15,19 +14,23 @@ print ('Directory Server listening for file requests.....')
 
 def find_file(file_name):
 
-    with open('mapping.csv', 'rt') as fn: 
-        readin = csv.DictReader(fn, delimiter = ',') #splits the cells by commas
-        header = readin.fieldnames
-        for row in readin:
-            input_file = row['User_input']
+    with open('map.csv', 'rt') as csvfile: 
+        reader = csv.DictReader(csvfile, delimiter = ',') #splits the cells by commas
+        titles = reader.fieldnames
+        for row in reader:
+            #print (row['user_input'])
+            input_file = row['user_input']
+            print ('input file')
             if input_file == file_name:
-                real_file = row['File_name']
+                real_file = row['file_name']
                 print (real_file)
-                server_name = row['Server_Name']
+                server_name = row['server_name']
                 print (server_name)
                 server_port = row['server_port']
                 message = ('File_Name: ' + str(real_file) + '\nServer_Name: ' + str(server_name) + '\nServer_Port: ' + str(server_port))
                 return message
+            else:
+                return None 
 
 def main():
     
@@ -35,35 +38,27 @@ def main():
     
         conn, address = s.accept()
         print ('Connection from: ', address)
-        msg = ('What file would you like to search?')
+        msg = ('What file would you like to search for and for what purpose?')
         conn.send(msg.encode()) 
         data = conn.recv(RECV_BUFFER)
         data = data.decode()
         print ('File received from user: ' + str(data))      
         fn = data.split()[0]
         option = data.split()[1]
+        JOIN_ID = data.split()[2]
         answer = find_file(fn)
         
         if answer is not None:
             answer = str(answer)
-            print ('answer: \n' + answer)
+            print ('Mapping Info retrieved: \n' + answer)
             print("\n")
 
         else:
-            answer = ('NO SUCH FILE IN THIS DIRECTORY')
-            print ('answer: \n' + answer)
+            answer = ('NO_SUCH_FILE')
+            print ('ERROR: \n' + answer)
             print ("\n")
 
         conn.send(answer.encode())
-        ##maybe try the locking on another server.."
-
-    
-        with FileLock(data):
-            #work with the file as it is now locked
-
-            print("Lock acquired.")
-            conn.send(answer.encode()
-        
 
         conn.close
      

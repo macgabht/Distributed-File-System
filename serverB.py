@@ -1,7 +1,7 @@
 import socket, sys, os
 
 
-port = 22222 
+port = 22228 
 s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 HOST = 'localhost'
 s.bind ((HOST, port))
@@ -19,10 +19,13 @@ print ('Server A is listening.....')
 #updating versions
 #need to implement file numbers
 
+connections
+
 def reply(answer, option, conn):
         if answer[0] == "Write_completed":
                 msg = ('Write was successful: ' + str(answer[1]))
                 conn.send(msg.encode())
+
         elif answer is not IOError and option == 'read': #send the string to client to read
                 conn.send(answer.encode())
                 print ('String was successfully sent.')
@@ -32,25 +35,27 @@ def replication(file_name):
         writing = fr.read()
         fr.close()
 
-        message = ("Replicating: " + str(file_name) + '\nEdit: ' + writing)
+        message = ("Replicating: " + str(file_name) + writing)
 
-        server_port_b = 22228 
+        server_port = 22228
         host = 'localhost'
         print ('Sending rep file to serverB')
         rep_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        rep_sock.connect((host, server_port_b))
+        rep_sock.connect((host, server_port))
         rep_sock.send(message.encode())
         rep_sock.close()
 
 
-        server_port_c = 22229
+        server_port = 22229
         host = 'localhost'
         print ('Sending rep file to serverC')
         rep_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        rep_sock.connect((host, server_port_c))
+        rep_sock.connect((host, server_port))
         rep_sock.send(message.encode())
         rep_sock.close()
-     
+
+        
+        
 
 def handle_msg(file_name, edit, option):
         if 'read' in option:
@@ -68,9 +73,8 @@ def handle_msg(file_name, edit, option):
                 f = open(file_name, 'wb')
                 f.write(edit)
                 replication(file_name)
-                return ('Write_completed', file_updates[file_name])
-                #----------should give us a file number to return------------------------------#
-                #------in here try and implement some sort of version checking/replication------#
+                return ('Write_completed', file_updates[file_name]) #should give us a file number to return
+#####in here try and implement some sort of version checking/replication######
 
 def main():
 
@@ -80,10 +84,9 @@ def main():
                 msg = conn.recv(RECV_BUFFER)
                 msg = msg.decode()
                 msg2 = msg.split()
-                
-                print ('Option selected by user: ' + str(opt) + '\nFile Name: ' + str(file_name))
+               
 
-                if 'Check_File' in msg2[3]:
+                if 'Check_File' in msg2[1]:
                         if not file_name in file_updates:
                                 ('File yet to be edited.')
                                 resp = ('0')
@@ -93,7 +96,6 @@ def main():
                                 print ('Sending our file version number.')
                                 conn.send(file_upd.encode())
 
-                #-------------Replication from other file server-------------#
 
                 elif 'Replicating' in msg2[0]:
                         r_file_name = msg2[1]
@@ -103,14 +105,16 @@ def main():
                         fr.write(r_edit)
                         fr.close()
                         print ("Replication completed on: " + str(r_file_name))
-
-                #--------------Reading and writing as normal-------------#             
-                elif msg != ' ':
+                        
+                        
+                elif msg != ' ':   #reading or writing as normal
                         file_name = msg2[1]
                         option = msg2[3]
                         edit = msg2[5]
                         answer = handle_msg(file_name, edit, option)
                         reply(answer, option, conn)
+
+                
 
         conn.close()
                 

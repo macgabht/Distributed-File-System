@@ -1,4 +1,4 @@
-import socket, sys, pdb 
+import socket, sys, pdb, os.path 
 
 connections = {'ServerA' : 22222,
                'ServerB' : 22223,
@@ -6,7 +6,9 @@ connections = {'ServerA' : 22222,
                'Directory': 22226,
                }
 
+cache_path = "C:\\Users\\tiarnan\\Documents\\DFS\\Cache\\"
 RECV_BUFFER = 1024
+file_updates = {} #use this to check if files are up-to-date 
 
 def create_socket_ser(address):
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -53,16 +55,41 @@ def write_to_fs(file_name, opt, s):
         message = ('FILE_NAME: ' + str(file_name) + '\nOPTION: ' + str(opt) + '\nEDIT: ' + str(send_edit)) 
         s.send(message.encode())
         reply = s.recv(RECV_BUFFER)
-        reply = reply.decode()
-        return reply
+        reply = reply.decode() #reply will contain two values
+        msg3 = reply.split()
+        answer = (msg3[0], msg3[1], send_edit)
+        return answer
 
-
-def read_to_fs(file_name, opt, r):
-        print ('Sending read request to File Server')
+def check_file_updates(file_name, file_updates, r_s):
+        msg = 'File_name: ' + str(File Name) +'\nOption: Check_file' + 'Edit: ' + str('-')
+        print (msg)
+        r_s.send(msg.encode())
+        file_ver = r_s.recv(RECV_BUFFER)
+        file_ver = file_ver.decode()
+        file_ver = int(file_ver)
+        if file_ver == 0:
+                print ('File yet to be edited.')
+                file_updates[file_name] = file_ver
+                resp = '0'
+                return resp
+        
+        elif file_updates[file_name] == file_ver:  #MATCHING, USE CACHE
+                print ('File version matches ours, use cache to access.')
+                resp = '1'
+                return resp
+        else:
+                print('File has been edited since our last access, cache file no longer relevant.')
+                print ('Request new copy.')
+                resp = ('2', file_ver)
+                return resp
+        
+        
+def read_to_fs(file_name, opt, r_s):
+        print ('Sending read request to File Server, with file number.')
         message = ("File_name: " +str(file_name) + '\nOption: ' + str(opt) + '\nEdit: ' + '-')
         print (message)
-        r.send(message.encode())
-        rec = r.recv(RECV_BUFFER)
+        r_s.send(message.encode())
+        rec = r_s.recv(RECV_BUFFER)
         rec = rec.decode()
         return rec
         
@@ -73,84 +100,110 @@ def process_write(file_name, opt, host, port, JOIN_ID):
         msg = response.split()
         file_name = msg[1]
         server_name = msg[3]
-        file_server_port = msg[5] #have info on file, need to pass name to locking
+        file_server_port = msg[5] #have info on file from directory, need to pass name to locking
         print (msg)
         s.close()
-        ############################################################
-        #########LOCKING########
+        
+        #-------LOCKING------------#
         PORT = connections['Locking']
         l = create_socket_ser((host, PORT))
         u_l = 'lock'
         print ('Your join_id is: ' + str(JOIN_ID))
-        print ("To gain a lock, format the string as such: lock-file_name-JOIN_ID")
+        print ("To gain a lock or unlock, format the string as such: unlock/lock-file_name-JOIN_ID")
         lock_ans = talk_to_locking(file_name, l, JOIN_ID, u_l)
         print (lock_ans)
         l.close()
-        ##############################################################
-        #               file server
+       
+        # ----------file server-------------------#
+        #-------we don't check file versions when writing as it will have to be updated in server dict anyway-----#
         
         PORT = int(file_server_port)
         print ('Now connecting to file server..')
         d = create_socket_ser((host, PORT))
-        response = write_to_fs(file_name, opt, s)
-        if response == 'Write was successful.':
-               print (response)
+        response = write_to_fs(file_name, opt, d)
+        msg = response.split()
+        if msg[0] == 'Write was successful.': 
+               print (msg[0])
+               print ('Please update your version number of the file'.)
+               file_upd = int(msg[1])
+               print (msg[1]) #gives us a file version number
+               edit = msg[2]
+               file_updates[file_name] = file_upd #updated our version of the file in our dict
+               use_cache(file_name, edit, opt, file_updates)
+
+        #--------back to locking to unlock the file----------------#
+        print('User is finished with this file. Reopening locking connection\n')
+        PORT = connections['Locking']
+        l = create_socket_ser((host, PORT))
+        print("To gain a lock or unlock, format the string as such: unlock/lock-file_name-JOIN_ID")
+        u_l = 'unlock'      
+        lock_ans = talk_to_locking(file_name, l, JOIN_ID, u_l)
+        if 'Lock_released' in lock_ans:
+                print ('Succesfully unlocked the file.')
         
-        
-                
 def process_read(file_name, opt, host, port, JOIN_ID):
         s = create_socket_dir((host, port)) #create connection to directory, we have file_name
         response = dir_finder(file_name, opt, s, JOIN_ID) #get answer from directory
         msg = response.split()
         file_name = msg[1]
         server_name = msg[3]
-        file_server_port = msg[5] #have info on file, need to pass name to locking
+        file_server_port = msg[5] #have info on file
         print (msg)
         s.close()
         print (opt)
         print ('Now connecting to file server...')
+        print ('Checking File number first.')
         PORT = int(file_server_port)
-        r = create_socket_ser((host, PORT)) #connection from....
-        ##########in here we need to check if its in cache#####
-        #if in_cache_test(file_name):
-                #with open(file_name, 'rb') as cache_f:
-                        #print ('File found in cache, but may not be up to date')
-                        #print (cache_f.read())
-        else:       
-                read_file = read_to_fs(file_name, opt, r)
-                make_cache_copy(file_name, read_file)
-                r.close()
-                if read_file != "File could_not_be_found_here\n":
-                       print (read_file)
-               
-
-def in_cache_test(file_name):
-        try:
-                open(file_name, 'rb')
-        except FileNotFoundError:
-                return False
-
-        return True
-
-def make_cache_copy(file_name, edit):
-        with open(file_name, 'wb') as cache_f:
-                cache_f.write(edit)
-
-def update_cache(file_name, edit, opt, JOIN_ID):
-
-        current_path = os.path.dirname(os.path.realpath(sys.argv[0]))
-        cache_f = current_path + "\\user_cache" + JOIN_ID + "\\" file_name
-
-        os.makedirs(os.path.dirname(cache_f), exist_ok = True)
-
-        if opt == "w";
-                with open(cache_f, opt) as fc:
-                    fc.write(send_edit)
-        else:
-                with open(cache_f, "r") as fc:        
-                    print ('*')
-                    print(fc.read())
-                    print ('*')
-
+        r_s = create_socket_ser((host, PORT)) #connection from....
+        response = check_file_updates(file_name, file_updates, r_s)
+        r_s.close()
+        #------When reading a file, we don't look to achieve a lock on it-------------#
+        #------close socket and reopen to file server------#
         
+        r_s = create_socket_ser((host, PORT))
+        if response == '0': #carry on as normal
+                read_file = read_to_fs(file_name, opt, r_s)
+                opt = 'write'
+                use_cache(file_name, read_file, opt, file_updates)
+                r_s.close()
+                if read_file != "File could_not_be_found_here\n":
+                         print(read_file)
+        elif response == '1':
+                         print ('Accessing file from cache')
+                         use_cache(file_name, '-', opt, file_updates)
+                         r_s.close()
+        elif response[0] == '2': #carry on as normal, update the file version, after reading overwrite the file in the cache
+                        file_ver = response[2]
+                        read_file = read_to_fs(file_name, opt, r_s)
+                        file_updates[file_name] = file_ver #update the version of the file in our dict
+                        opt = 'write' #after reading, write it to our cache 
+                        use_cache(file_name, read_file, opt, file_updates)
+                        r_s.close()
+        
+        
+
+#def in_cache_test(file_name):
+        #for dirpath, dirnames, filenames in os.walk(cache_path):
+           # for filename in filenames:
+              #  if filename == file_name:
+                 #   filename = os.path.join(dirpath, filename)
+                 #   print(filename)
+                  #  print(dirpath)
+                   ## return True
+               # else:
+                  #  print ('File not in cache.')  
+                  #  return False
+
+#------Caching - files are written to same directory the client is in ----------------#
+def use_cache(file_name, send_edit, opt, file_updates):
+        cache_f = os.path.join(cache_path, file_name) #join path, write file to cache after r/w
+
+        if opt == 'read':
+                with open(cache_f, 'r') as fc:
+                       print(fc.read)
+        else:
+                with open(cache_f, 'w') as fc:
+                        fc.write(send_edit)
+
+                
         
