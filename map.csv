@@ -1,5 +1,5 @@
 user_input,file_name,server_name,server_port
-File1,File1.txt,Server,22222
+File1,File1.txt,ServerA,22222
 File2,File2.txt,ServerA,22222
 File3,File3.txt,ServerA,22222
 File4,File4.txt,ServerA,22222

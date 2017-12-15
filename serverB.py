@@ -24,7 +24,7 @@ def reply(answer, option, conn):
                 msg = ('Write was successful: ' + str(answer[1]))
                 conn.send(msg.encode())
 
-        elif answer is not IOError and option == 'read': #send the string to client to read
+        elif answer is not IOError and option == '<read>': #send the string to client to read
                 conn.send(answer.encode())
                 print ('String was successfully sent.')
 
