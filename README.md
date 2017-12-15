@@ -20,7 +20,8 @@ Method
 
 3. The client recieves the information on the File and is connected to the Locking server which returns a lock once it has been achieved.
 4. The client is then connected to the File Server which either requests an edit if being written to, or sends the read file as a string to the client.
-
 5. When writing a new file into its database, the file server will send a replication messsage to other servers with the updated string. 
 6. After writing to a new file, the client will write the file to its cache.
 7. The cache is also accessed if the client receives confirmation from the server that its current copy of a file is up to date and that  it wishes to only read it.
+- when writing to a file, the client doesn't check if the file is stored in cache as it have to send an edited copy anyway to the server.
+8. The cache folder is hardcoded as a directory in my laptop, so may have to be changed to function properly. 
