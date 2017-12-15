@@ -14,7 +14,7 @@ This is written in Python 3.6.3,
  
  
 Method
-1. Client is prompted to either <write>/<read> to a file in the format - <write> File1
+1. Client is prompted to either "<write>/<read>" to a file in the format - "<write>" File1
   
 2. Directory server is connected to immmediately, returning information on the file. 
 
