@@ -24,26 +24,27 @@ class FileLock:
         self.is_locked = False
         self.lockfile = os.path.join(os.getcwd(), "%s.lock" % file_name)
         self.file_name = file_name
-        self.timeout = 0
+        self.timeout = 15
         self.delay = 0.5
         self.lock_status = {} #dict to store file_name and join_id
 
     def parse_message(self, option, fn, JOIN_ID):
                 
-        if 'lock' in option:
+        if option== 'lock':
             if not self.is_locked:
                 fn = self.file_name
                 reply = self.acquire(fn, JOIN_ID)
                 return reply
 
-        elif 'unlock' in option:
+        elif option == 'unlock':
              if self.file_name in self.lock_status: #player returns having used the lock
+                    print ('TESTING 1,2')
                     if self.lock_status[file_name] == JOIN_ID:
                         reply = self.release()
                         del self.lock_status[file_name]
                         return reply
-             else:
-                    print ('Unable to unlock file, user misprint.')             
+        else:
+                    print ('User input key incorrect.')             
 
 
     def acquire(self, fn, JOIN_ID):
@@ -77,7 +78,7 @@ class FileLock:
             os.close(self.fd)
             os.unlink(self.lockfile)
             self.is_locked = False
-
+            print('Lock successfully released')
         return ('LR')
 
 
@@ -98,14 +99,15 @@ def main():
         JOIN_ID = x[5]
         fl = FileLock(file_name)
         status = fl.parse_message(option, file_name, JOIN_ID)
-        if 'LA' in status:
+        if status == 'LA':
             print ('Lock Achieved')
-            x = ('Lock_Achieved')
-        elif 'LR' in status:
+            message = ('Lock_Achieved')
+            
+        elif status == 'LR':
             print ('Lock released')
-            x = ('Lock_Released')
+            message = ('Lock_Released')
 
-        conn.send(x.encode())
+        conn.send(message.encode())
                         
         conn.close()
 

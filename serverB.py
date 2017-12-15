@@ -12,14 +12,12 @@ file_updates = {}
 #{'File1.txt' : Version Number}
 #if first time file is accessed, make zero
 
-print ('Server A is listening.....')
+print ('Server B is listening.....')
 
 #initially just stored the files in the same directory as the serverA python
 #script but trying to implement file paths instead, as this could be handy for
 #updating versions
 #need to implement file numbers
-
-connections
 
 def reply(answer, option, conn):
         if answer[0] == "Write_completed":
@@ -99,7 +97,8 @@ def main():
 
                 elif 'Replicating' in msg2[0]:
                         r_file_name = msg2[1]
-                        r_edit = msg2[3]
+                        msg3 = msg.split(':')
+                        r_edit = msg3[2]
                         print (msg)
                         fr = open(r_file_name, 'w')
                         fr.write(r_edit)

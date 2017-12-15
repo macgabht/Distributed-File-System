@@ -40,11 +40,11 @@ def main():
         msg = ('What file would you like to search for and for what purpose?')
         conn.send(msg.encode()) 
         data = conn.recv(RECV_BUFFER)
-        data = data.decode()
-        print ('File received from user: ' + str(data))      
+        data = data.decode()  
         fn = data.split()[0]
         option = data.split()[1]
         JOIN_ID = data.split()[2]
+        print ('File_name: ' + str(fn) + '\nOption: ' + str(option) + '\nJOIN_ID: ' + str(JOIN_ID))
         answer = find_file(fn)
         
         if answer is not None:

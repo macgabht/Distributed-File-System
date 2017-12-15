@@ -18,16 +18,17 @@ def main():
 
     while True:
 
-        print ('Enter write/read file_name..')
+        print ('Enter <write>/<read> file_name..')
+        print ('File names written in format: File1 etc...')
         usr_input = sys.stdin.readline()
 
-        if "write" in usr_input:
+        if "<write>" in usr_input:
             opt = usr_input.split()[0]
             file_name = usr_input.split()[1]
             port = connections['Directory']
             client_util.process_write(file_name, opt, host, port, JOIN_ID)
 
-        elif "read" in usr_input:
+        elif "<read>" in usr_input:
             opt = usr_input.split()[0]
             file_name = usr_input.split()[1]
             port = connections['Directory']
