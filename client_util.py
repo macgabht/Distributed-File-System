@@ -33,7 +33,7 @@ def dir_finder(file_name, opt, s, JOIN_ID):
         return answer #should return fn, server name, server port
 
 def talk_to_locking(file_name, l, JOIN_ID, u_l): #unlock-lock
-        data = (str(u_l) + '-' + str(file_name)+'-'+str(JOIN_ID))
+        data = ('File_name: ' + str(file_name) + '\nOption: ' + str(u_l) + '\nJoin_Id: ' + str(JOIN_ID))
         print (data)
         l.send(data.encode())
         reply = l.recv(RECV_BUFFER)
@@ -55,13 +55,13 @@ def write_to_fs(file_name, opt, s):
         message = ('FILE_NAME: ' + str(file_name) + '\nOPTION: ' + str(opt) + '\nEDIT: ' + str(send_edit)) 
         s.send(message.encode())
         reply = s.recv(RECV_BUFFER)
-        reply = reply.decode() #reply will contain two values
+        reply = reply.decode() #reply will contain two values, "Write  Completed", file_no.
         msg3 = reply.split()
         answer = (msg3[0], msg3[1], send_edit)
         return answer
 
 def check_file_updates(file_name, file_updates, r_s):
-        msg = 'File_name: ' + str(File Name) +'\nOption: Check_file' + 'Edit: ' + str('-')
+        msg = ('File_name: ' + str(file_name) +'\nOption: Check_file' + '\nEdit: ' + str('-'))
         print (msg)
         r_s.send(msg.encode())
         file_ver = r_s.recv(RECV_BUFFER)
@@ -109,11 +109,16 @@ def process_write(file_name, opt, host, port, JOIN_ID):
         l = create_socket_ser((host, PORT))
         u_l = 'lock'
         print ('Your join_id is: ' + str(JOIN_ID))
-        print ("To gain a lock or unlock, format the string as such: unlock/lock-file_name-JOIN_ID")
         lock_ans = talk_to_locking(file_name, l, JOIN_ID, u_l)
         print (lock_ans)
-        l.close()
-       
+        if 'Lock_Achieved' in lock_ans:
+                 l.close()
+                 print ('Redirecting to file server now.')
+        
+        if not lock_ans:
+                print('Error occurred during the locking stage.\n')
+                l.close()
+
         # ----------file server-------------------#
         #-------we don't check file versions when writing as it will have to be updated in server dict anyway-----#
         
@@ -124,7 +129,7 @@ def process_write(file_name, opt, host, port, JOIN_ID):
         msg = response.split()
         if msg[0] == 'Write was successful.': 
                print (msg[0])
-               print ('Please update your version number of the file'.)
+               print ('Please update your version number of the file')
                file_upd = int(msg[1])
                print (msg[1]) #gives us a file version number
                edit = msg[2]
@@ -135,7 +140,6 @@ def process_write(file_name, opt, host, port, JOIN_ID):
         print('User is finished with this file. Reopening locking connection\n')
         PORT = connections['Locking']
         l = create_socket_ser((host, PORT))
-        print("To gain a lock or unlock, format the string as such: unlock/lock-file_name-JOIN_ID")
         u_l = 'unlock'      
         lock_ans = talk_to_locking(file_name, l, JOIN_ID, u_l)
         if 'Lock_released' in lock_ans:

@@ -20,7 +20,6 @@ def find_file(file_name):
         for row in reader:
             #print (row['user_input'])
             input_file = row['user_input']
-            print ('input file')
             if input_file == file_name:
                 real_file = row['file_name']
                 print (real_file)

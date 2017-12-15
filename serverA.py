@@ -80,8 +80,7 @@ def main():
                 msg = conn.recv(RECV_BUFFER)
                 msg = msg.decode()
                 msg2 = msg.split()
-                
-                print ('Option selected by user: ' + str(opt) + '\nFile Name: ' + str(file_name))
+        
 
                 if 'Check_File' in msg2[3]:
                         if not file_name in file_updates:
@@ -106,10 +105,12 @@ def main():
 
                 #--------------Reading and writing as normal-------------#             
                 elif msg != ' ':
+                        print (msg2)
                         file_name = msg2[1]
                         option = msg2[3]
-                        edit = msg2[5]
-                        answer = handle_msg(file_name, edit, option)
+                        text = msg2[5]
+                        print ('Option selected by user: ' + str(option) + '\nFile Name: ' + str(file_name))
+                        answer = handle_msg(file_name, text, option)
                         reply(answer, option, conn)
 
         conn.close()

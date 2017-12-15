@@ -16,31 +16,27 @@ print ('Locking Server listening for lock requests.....')
 class FileLockException(Exception):
     pass
 
-class FileLock(object):
+class FileLock:
 
-    def __init__(self, file_name, timeout=0, delay=.05):
-        #---------Prepare the locker. Specify the file to lock
-        #---------Timeout is made to zero here.     
+    def __init__(self, file_name):
+        #---------Prepare the locker. Specify the file to lock---------#
+        #---------Timeout is made to zero here --------------#
         self.is_locked = False
         self.lockfile = os.path.join(os.getcwd(), "%s.lock" % file_name)
         self.file_name = file_name
-        self.timeout = timeout
-        self.delay = delay
+        self.timeout = 0
+        self.delay = 0.5
         self.lock_status = {} #dict to store file_name and join_id
 
-    def parse_message(self, message):
-        parse = message.split('-')
-        request = parse.split[0] 
-        fn = parse.split[1] #client sends 'lock'/'unlock'-File_name-JOIN_ID...
-        JOIN_ID = parse.split[2]
-        
-        if 'lock' in request:
+    def parse_message(self, option, fn, JOIN_ID):
+                
+        if 'lock' in option:
             if not self.is_locked:
-                self.file_name = fn
-                reply = self.acquire(JOIN_ID)
+                fn = self.file_name
+                reply = self.acquire(fn, JOIN_ID)
                 return reply
 
-        elif 'unlock' in request:
+        elif 'unlock' in option:
              if self.file_name in self.lock_status: #player returns having used the lock
                     if self.lock_status[file_name] == JOIN_ID:
                         reply = self.release()
@@ -50,7 +46,7 @@ class FileLock(object):
                     print ('Unable to unlock file, user misprint.')             
 
 
-    def acquire(self, JOIN_ID):
+    def acquire(self, fn, JOIN_ID):
         #Acquire the lock, if possible. If the lock is in use, it check again
         #every `wait` seconds. It does this until it either gets the lock or
         #exceeds `timeout` number of seconds, in which case it throws 
@@ -59,6 +55,7 @@ class FileLock(object):
         start_time = time.time()
         while True:
             try:
+                print (self.lockfile)
                 self.fd = os.open(self.lockfile, os.O_CREAT|os.O_EXCL|os.O_RDWR)
                 break;
             except OSError as e:
@@ -68,7 +65,7 @@ class FileLock(object):
                     raise FileLockException("Timeout occured.")
                 time.sleep(self.delay)
         self.is_locked = True
-        self.lock_status[file_name] = JOIN_ID #obtained lock, add to dict
+        self.lock_status[fn] = JOIN_ID #obtained lock, add to dict
         return ('LA')
 
 
@@ -89,13 +86,18 @@ def main():
 
 
     while True:
-
         conn, address = s.accept()
         print('Connection from: ', address)
-        request = conn.recv(RECV_BUFFER)
-        request = request.decode() #should contain three values
-        print (request)
-        status = FileLock.parse_message(request)
+        msg = conn.recv(RECV_BUFFER)
+        msg = msg.decode() #should contain three values
+        print (msg)
+        message = str(msg)
+        x = message.split()
+        file_name = x[1] #client sends 'lock'/'unlock'-File_name-JOIN_ID...
+        option = x[3]
+        JOIN_ID = x[5]
+        fl = FileLock(file_name)
+        status = fl.parse_message(option, file_name, JOIN_ID)
         if 'LA' in status:
             print ('Lock Achieved')
             x = ('Lock_Achieved')
